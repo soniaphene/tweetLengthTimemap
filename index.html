@@ -1,0 +1,165 @@
+<html>
+
+<head>
+    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignment 4: Visualization</title>
+<style>
+      rect.bordered {
+        stroke: #E6E6E6;
+        stroke-width:2px;   
+      }
+
+      text.chartLabels {
+        font-size: 9pt;
+        font-family: Consolas, courier;
+        }
+
+</style>
+</head>
+
+
+<body>
+
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8">
+            <div class="page-header center">
+                <h1>Part 1: <small>Tweet Length Timemap</small></h1>
+            </div>
+            <h2> Analyzing tweet length </h2>
+            <p> In this project, I analyzed tweets to determine during which hours of which days twitter users post the longest and shortest tweets. I used over 400,000 US tweets in English collected from the Twitter Stream API from Jan 28, 2014 to Feb 25, 2014 to make my calculations. First, I determined the average length of tweets from each day, hour pair ( 24 hours in a day for 7 days a week) by dividing the sum of the lengths of all the tweets during a period by the number of all the tweets in that period. Then, I observed the range of my data and created 10 "buckets" of uniform size within that range. For example, if I had found the range of my data to be from 2 to 22, I would create buckets with intervals of [2,4),[4,6),[6,8)...[20,22]. I then assigned values to each day, hour pair corresponding to which bucket number it fell into depending on the length of the tweet. From the above example, if a day, hour pair had an average length of 7 it would be assigned a value of 3 for being in the third bucket. The visualization I created below uses these bucket numbers to show which times have the longest and shortest tweets on average.  </p>
+            <h2>Timemap Visualization</h2>
+            <div id="chart"></div>
+            <p> This map is color-coded based on average tweet length. Longer tweets are darker and shorter tweets are lighter-the legend at the bottom describes the exact character length. From left to right, all hours of the day are displayed starting from 1am on the horizontal axis and from top to bottom the days are shown starting from Monday on the vertical axis. Each interval has a uniform size of 1.3 characters. </p>
+            <h2> When are tweets short and sweet? </h2>
+            <p> From the timemap above, it is easy to see that tweets are generally the longest in the afternoons on weekdays and shorter during the very early morning hours of the weekend. However, it is interesting to note that the average length of a tweet does not change by much. The largest average tweet length was 64.6 characters on Friday at 5 pm  and the shortest was 51.9 characters on Sunday at 8am. </p>
+            <p> It makes sense that tweets would be the longest on the weekday afternoons when people are taking a break from work or just finishing up school. Most of these tweets contained links or were tweeted at other users, prompting a response, which makes sense since this is normally the time conversations might occur. It also makes sense that tweets are shorter on weekend mornings. The tweets from this time period were less discussion based or tweeted at another user. They were often short observations. Several of the tweets from the early morning hours of Sunday were twitter users who were writing about having just gotten home after a night out, which fits in with the fact that most people on twitter are younger. </p>
+            <p> Below are some examples of tweets from Sunday at 8am. I chose some of the shortest to show which tweets were bringing down the average.</p>
+            <pre>patience.
+
+wtf just happened
+
+I'm so bad ðð­
+
+Writing is a hobby.
+
+WE MADE IT HOME ALIVE.
+
+my everything hurts
+
+Well I'm not gonna sleep tonight</pre>
+            <p> Below are some example tweets from Friday at 5 pm. As mentioned above, many contain links or are tweeted at other users. These factors both increase the average. </p>
+            <pre> @ayyyypeeee I know legit feels like yesterday #gasfumes but I'll be home March 5!
+
+"@TheD: RT if you need this in your house http://t.co/J7mnErucbz" @yoshira @yasirbatista @rafael926 @VladGuzman @manyvegas23 @vinzzanity
+
+Prepared to take a detention to watch this USA Canada game during class #USA #FTB
+
+#Brookfield , WI #Job: Learner Supplemental at Mercury Marine http://t.co/0jflXRePfF #Jobs #TweetMyJobs
+
+Three hot guys in front of me shedding layers of clothes for airport security...HAPPY FRIDAY! (at @flysfo) http://t.co/7I3KyKjEPd
+
+It's gonna be so hard to work because everyday after school I take a nap &amp; now I'mma have to start getting ready for work.
+
+Are parent never missed work. This generation will call in sick to catch up on netflix. Then social media how they can't get a better job.</pre>
+			
+			
+
+        <div class="col-md-2"></div>
+    </div>
+
+
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+	<script type="text/javascript">
+  //NOTE: some of this code was taken from http://bl.ocks.org/tjdecke/5558084 and modified to fit this assignment
+
+          var margin = { top: 50, right: 0, bottom: 100, left: 30 }, //initially sets up the sizes of map
+          width = 960 - margin.left - margin.right,
+          height = 430 - margin.top - margin.bottom,
+          gridSize = Math.floor(width / 24),
+          legendElementWidth = gridSize*2,
+          buckets = 10,
+          colors=['#f7fcf5','#e5f5e0','#c7e9c0','#a1d99b','#74c476','#41ab5d','#238b45','#006d2c','#00441b','#003300'], //chose color scheme
+          days = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
+          times = ["1a", "2a", "3a", "4a", "5a", "6a", "7a", "8a", "9a", "10a", "11a", "12p", "1p", "2p", "3p", "4p", "5p", "6p", "7p", "8p", "9p", "10p", "11p", "12a"];
+
+
+      d3.tsv("out.tsv",
+        function(d) { //gets all the data and stores it
+          return {
+            day: +d.day,
+            hour: +d.hour,
+            value: +d.value
+          };
+        },
+        function(error, data) {
+          var colorScale = d3.scale.quantile()
+              .domain([0, buckets - 1, d3.max(data, function (d) { return d.value; })]) //sets domain and assigns color as range
+              .range(colors);
+
+          var svg = d3.select("#chart").append("svg") //adds the chart 
+              .attr("width", width + margin.left + margin.right)
+              .attr("height", height + margin.top + margin.bottom)
+              .append("g")
+              .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+          var dayLabels = svg.selectAll(".dayLabel") //adds labels for each of the days
+              .data(days)
+              .enter().append("text")
+                .text(function (d) { return d; })
+                .attr("x", 0)
+                .attr("y", function (d, i) { return i * gridSize; })
+                .style("text-anchor", "end")
+                .attr("transform", "translate(-6," + gridSize / 1.5 + ")")
+                .attr("class","chartLabels");
+                
+          var timeLabels = svg.selectAll(".timeLabel") //adds labels for the times
+              .data(times)
+              .enter().append("text")
+                .text(function(d) { return d; })
+                .attr("x", function(d, i) { return i * gridSize; })
+                .attr("y", 0)
+                .style("text-anchor", "middle")
+                .attr("transform", "translate(" + gridSize / 2 + ", -6)")
+                .attr("class","chartLabels");
+                
+
+          var heatMap = svg.selectAll(".hour")
+              .data(data)
+              .enter().append("rect") //for the data adds the rectangles for each
+              .attr("x", function(d) { return (d.hour - 1) * gridSize; })
+              .attr("y", function(d) { return (d.day - 1) * gridSize; })
+              .attr("rx", 4)
+              .attr("ry", 4)
+              .attr("class", "hour bordered")
+              .attr("width", gridSize)
+              .attr("height", gridSize)
+              .style("fill", colors[0]);
+
+          heatMap.transition().duration(1000)
+              .style("fill", function(d) { return colorScale(d.value); }); //colors based on valur
+
+          heatMap.append("title").text(function(d) { return d.value; }); //sets mouse hovering
+
+          var legend = svg.selectAll(".legend") //adds a legend
+              .data([0].concat(colorScale.quantiles()), function(d) { return d; })
+              .enter().append("g")
+              .attr("class", "legend");
+
+          legend.append("rect")
+            .attr("x", function(d, i) { return legendElementWidth * i; }) //create rectangle with each of the colors
+            .attr("y", height)
+            .attr("width", legendElementWidth)
+            .attr("height", gridSize / 2)
+            .style("fill", function(d, i) { return colors[i]; }); //has each of the colors
+
+          legend.append("text")
+            .attr("class", "chartLabels")
+            .text(function(d,i) {  return ">="+(1.3*i+51.9).toFixed(2); })//returns the length of tweets it is in between
+            .attr("x", function(d, i) { return legendElementWidth * i; })
+            .attr("y", height + gridSize);
+      });
+    </script>
+</body>
+</html>
